@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { 
+      width: 345px; 
+      font-family: Arial, sans-serif; 
+      padding: 8px; 
+      margin: 0; 
+      background-color: #eceef0;
+      user-select: none;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      max-height: 600px;
+    }
+
+    /* Масштабирование шрифтов, иконок и кнопок (5 уровней) */
+    body.font-small .tab-item { font-size: 11px; padding: 4px; }
+    body.font-small .setting-row, body.font-small .whitelist-item { font-size: 11px; }
+    
+    body.font-medium .tab-item { font-size: 12px; padding: 6px 4px; }
+    body.font-medium .setting-row, body.font-medium .whitelist-item { font-size: 13px; }
+    body.font-medium .icon-btn { width: 21px; height: 21px; font-size: 10px; }
+    body.font-medium .icon-btn.wl-btn { font-size: 11px; }
+    body.font-medium .time-idle { font-size: 10px; }
+    
+    body.font-large .tab-item { font-size: 13px; padding: 7px 5px; }
+    body.font-large .setting-row, body.font-large .whitelist-item { font-size: 14px; }
+    body.font-large .icon-btn { width: 22px; height: 22px; font-size: 11px; }
+    body.font-large .icon-btn.wl-btn { font-size: 12px; }
+    body.font-large .time-idle { font-size: 11px; }
+
+    body.font-xlarge .tab-item { font-size: 15px; padding: 8px 6px; }
+    body.font-xlarge .setting-row, body.font-xlarge .whitelist-item { font-size: 15px; }
+    body.font-xlarge .tab-icon { width: 16px; height: 16px; }
+    body.font-xlarge .icon-btn { width: 24px; height: 24px; font-size: 12px; }
+    body.font-xlarge .icon-btn.wl-btn { font-size: 13px; }
+    body.font-xlarge .time-idle { font-size: 12px; }
+    body.font-xlarge .tab-item:hover .meta-and-actions,
+    body.font-xlarge .tab-item:has(.wl-page) .meta-and-actions,
+    body.font-xlarge .tab-item:has(.wl-domain) .meta-and-actions { max-width: 200px; }
+
+    body.font-xxlarge .tab-item { font-size: 17px; padding: 10px 6px; }
+    body.font-xxlarge .setting-row, body.font-xxlarge .whitelist-item { font-size: 16px; }
+    body.font-xxlarge .tab-icon { width: 18px; height: 18px; }
+    body.font-xxlarge .icon-btn { width: 26px; height: 26px; font-size: 13px; }
+    body.font-xxlarge .icon-btn.wl-btn { font-size: 14px; }
+    body.font-xxlarge .time-idle { font-size: 13px; }
+    body.font-xxlarge .tab-item:hover .meta-and-actions,
+    body.font-xxlarge .tab-item:has(.wl-page) .meta-and-actions,
+    body.font-xxlarge .tab-item:has(.wl-domain) .meta-and-actions { max-width: 230px; }
+    
+/* Верхняя панель: Поиск + Переключатель режимов + Настройки */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 2px;
+      margin-bottom: 2px;
+      flex-shrink: 0;
+    }
+    .search-input {
+      flex-grow: 1;
+      padding: 5px 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 11px;
+      box-sizing: border-box;
+      outline: none;
+    }
+    .search-input:focus { border-color: #0078d4; }
+    
+    /* Максимально крупная шестеренка */
+    .settings-toggle-btn {
+      width: 28px;
+      height: 28px;
+      border: 1px solid #ddd;
+      background: white;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 25px;
+      line-height: 1;
+      color: #555;
+      flex-shrink: 0;
+      padding: 0;
+      transition: all 0.15s;
+    }
+    .settings-toggle-btn:hover { background: #e1dfdd; color: #0078d4; }
+    .settings-toggle-btn.active { background: #0078d4; color: white; border-color: #005a9e; }
+
+
+    /* Панель настроек */
+    .settings-panel {
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 10px;
+      margin-top: 4px;
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+    .settings-panel.visible { display: flex; }
+    
+    .setting-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #333;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 8px;
+    }
+    .setting-row:last-child { border-bottom: none; padding-bottom: 0; }
+    
+    .setting-select {
+      padding: 3px 6px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: inherit;
+      background: #f9f9f9;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .whitelist-box {
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 auto;
+      min-height: 80px;
+      max-height: 280px;
+      overflow-y: auto;
+      border: 1px solid #eee;
+      border-radius: 4px;
+      background: #fafafa;
+      padding: 4px;
+    }
+    body.is-sidepanel .whitelist-box {
+      max-height: none;
+    }
+
+        .whitelist-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px 6px;
+      border-bottom: 1px solid #eee;
+      color: #333;
+    }
+    .whitelist-item:last-child { border-bottom: none; }
+    .whitelist-info { display: flex; align-items: center; min-width: 0; overflow: hidden; flex-grow: 1; margin-right: 8px; }
+    .whitelist-domain { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* Основной контейнер списков */
+        .main-view { 
+      display: flex; 
+      flex-direction: column; 
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+    .main-view.hidden { display: none; }
+    
+    .section-header { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      cursor: pointer; 
+      padding: 4px 2px 4px 2px;
+      background: transparent;
+      border: none;
+      margin-top: 6px;
+      flex-shrink: 0;
+    }
+    /* Убираем лишний верхний отступ у самой первой видимой категории под строкой поиска */
+    .main-view > .section-header:first-of-type {
+      margin-top: 1px;
+    }
+    .section-header:hover .section-title { color: #0078d4; }
+    .section-title { 
+      font-size: 12px; 
+      font-weight: 700; 
+      color: #3b3f45; /* Нейтральный темно-графитовый текст */
+      text-transform: uppercase; 
+      letter-spacing: 0.6px; 
+      margin: 0; 
+      display: flex; 
+      align-items: center; 
+      gap: 6px; 
+    }
+    
+    .header-buttons { display: flex; gap: 4px; align-items: center; }
+    
+    .tab-list { 
+      background: #ffffff; 
+      border-radius: 6px; 
+      border: 1px solid #d5d9df; /* Деликатная нейтрально-серая рамка */
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      padding: 2px; 
+      margin-bottom: 2px;
+      overflow-y: auto;
+      min-height: 0;
+    }
+    
+    #audio-tabs-list {
+      max-height: 120px;
+      flex-shrink: 0;
+    }
+
+    /* Оба списка сжимаются до минимума, если вкладок мало, но не вытесняют друг друга, если их много */
+    #heavy-tabs-list, #sleep-tabs-list {
+      max-height: 230px;
+      flex-shrink: 1;
+    }
+
+    .tab-list.collapsed { display: none; }
+    
+        .tab-item { 
+      display: flex; 
+      align-items: center; 
+      justify-content: space-between; 
+      border-bottom: 1px solid #eee; 
+      cursor: pointer; 
+    }
+    .tab-item:last-child { border-bottom: none; }
+    .tab-item:hover { background-color: #f0f7ff; }
+    .tab-item.current-active { background-color: #f0f7ff; border-left: 3px solid #0078d4; }
+    
+    .tab-info { display: flex; align-items: center; min-width: 0; overflow: hidden; white-space: nowrap; flex-grow: 1; }
+    .tab-icon { width: 14px; height: 14px; margin-right: 6px; flex-shrink: 0; }
+    .tab-title-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    
+    .meta-and-actions {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      flex-shrink: 0;
+      opacity: 0;
+      max-width: 0;
+      overflow: hidden;
+      transition: opacity 0.15s ease-in-out, max-width 0.15s ease-in-out;
+    }
+
+    /* При наведении на любую строку показываем весь блок */
+    .tab-item:hover .meta-and-actions {
+      opacity: 1;
+      max-width: 165px;
+    }
+
+    /* Если включена защита — щит виден всегда и стоит на своём месте справа */
+    .tab-item:has(.wl-page) .meta-and-actions,
+    .tab-item:has(.wl-domain) .meta-and-actions {
+      opacity: 1;
+      max-width: 165px;
+    }
+
+    /* Элементы СЛЕВА от щита (время и звук) полностью убираем из потока, 
+       чтобы название вкладки растягивалось вплотную до щита */
+    .tab-item:has(.wl-page) .time-idle,
+    .tab-item:has(.wl-domain) .time-idle,
+    .tab-item:has(.wl-page) .mute-btn,
+    .tab-item:has(.wl-domain) .mute-btn {
+      display: none;
+    }
+
+    /* Кнопки СПРАВА от щита (Zᶻ и ✕) оставляем невидимыми, но на своих местах,
+       чтобы щит не прыгал при наведении курсора */
+    .tab-item:has(.wl-page) .sleep-btn,
+    .tab-item:has(.wl-domain) .sleep-btn,
+    .tab-item:has(.wl-page) .close-btn,
+    .tab-item:has(.wl-domain) .close-btn {
+      visibility: hidden;
+      opacity: 0;
+      transition: opacity 0.15s ease-in-out;
+    }
+
+    /* При наведении курсора возвращаем всё на свои места */
+    .tab-item:has(.wl-page):hover .time-idle,
+    .tab-item:has(.wl-domain):hover .time-idle,
+    .tab-item:has(.wl-page):hover .mute-btn,
+    .tab-item:has(.wl-domain):hover .mute-btn {
+      display: inline-block;
+    }
+    .tab-item:has(.wl-page):hover .sleep-btn,
+    .tab-item:has(.wl-domain):hover .sleep-btn,
+    .tab-item:has(.wl-page):hover .close-btn,
+    .tab-item:has(.wl-domain):hover .close-btn {
+      visibility: visible;
+      opacity: 1;
+    }
+    
+    .icon-btn { 
+      width: 19px; 
+      height: 19px; 
+      border-radius: 50%; 
+      border: 1px solid #b3b0ad; 
+      background: #f3f2f1; 
+      cursor: pointer; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      font-size: 9px; 
+      font-weight: bold; 
+      padding: 0; 
+      flex-shrink: 0; /* Запрещает кнопке сжиматься в овал при длинном тексте */
+    }
+    
+       /* Кнопка белого списка (Щит) — визуально чуть шире */
+    .icon-btn.wl-btn {
+      font-size: 10px;
+    }
+    .icon-btn.wl-btn span {
+      display: inline-block;
+      transform: scaleX(1.25);
+    }
+    .icon-btn.wl-btn:hover { background: #dff6dd; border-color: #107c41; }
+    .icon-btn.wl-btn.wl-page { background: #27ae60; color: white; border-color: #1e8449; }
+    .icon-btn.wl-btn.wl-domain { background: #0078d4; color: white; border-color: #005a9e; }
+
+    .icon-btn.sleep-btn sup { font-size: 6px; vertical-align: super; position: relative; top: -2px; margin-left: 1px; }
+    .icon-btn.sleep-btn:hover { background: #0078d4; color: white; border-color: #005a9e; }
+    .icon-btn.sleep-btn.danger:hover { background: #ffdad9; color: #a80000; border-color: #ffb3b0; }
+    .icon-btn.close-btn:hover { background: #e81123; color: white; border-color: #e81123; }
+    .icon-btn:disabled { background: #e1dfdd; border-color: #c8c6c4; color: #a19f9d; cursor: not-allowed; }
+    
+    .btn-small-mass { 
+      background: #0078d4; 
+      color: white; 
+      border: none; 
+      height: 20px; /* Одинаковая строгая высота для обеих кнопок */
+      padding: 0 9px; /* Естественная ширина по тексту с аккуратными отступами по бокам */
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+      border-radius: 4px; 
+      cursor: pointer; 
+      font-size: 12px; 
+      font-weight: bold; 
+      line-height: 1;
+    }
+    .btn-small-mass:hover { background: #005a9e; }
+    .btn-small-mass.btn-new { background: #27ae60; }
+    .btn-small-mass.btn-new:hover { background: #219653; }
+    
+    .time-idle { font-size: 9px; color: #888; padding-right: 2px; flex-shrink: 0; }
+    .arrow { font-size: 10px; color: #64748b; display: inline-block; width: 10px; }
+
+    /* Адаптация для режима Боковой панели */
+    body.is-sidepanel {
+      width: 100%;
+      height: 100vh;
+      max-height: none;
+    }
+    
+    body.is-sidepanel #heavy-tabs-list,
+    body.is-sidepanel #sleep-tabs-list {
+      flex: 0 0 auto;
+      max-height: none;
+    }
+
+    /* Кастомная всплывающая подсказка, масштабируемая вместе со шрифтом */
+    .custom-tooltip {
+      position: fixed;
+      background: #2b2b2b;
+      color: #ffffff;
+      padding: 5px 8px;
+      border-radius: 4px;
+      pointer-events: none;
+      z-index: 9999;
+      max-width: 240px;
+      line-height: 1.35;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+      opacity: 0;
+      transition: opacity 0.12s ease-in-out;
+      white-space: normal;
+      word-wrap: break-word;
+    }
+    .custom-tooltip.visible { opacity: 1; }
+
+    body.font-small .custom-tooltip { font-size: 11px; }
+    body.font-medium .custom-tooltip { font-size: 12px; }
+    body.font-large .custom-tooltip { font-size: 13px; }
+    body.font-xlarge .custom-tooltip { font-size: 15px; padding: 6px 10px; max-width: 280px; }
+    body.font-xxlarge .custom-tooltip { font-size: 17px; padding: 7px 11px; max-width: 310px; }
+  </style>
+</head>
+<body class="font-small">
+  
+  <!-- Верхняя панель: Поиск + Иконка режима + Шестеренка -->
+  <div class="top-bar">
+    <input type="text" id="tab-search" class="search-input" placeholder="Поиск по названию или URL..." autocomplete="off">
+    <button id="mode-toggle-btn" class="settings-toggle-btn" style="font-size: 17px;" title="Открыть в боковой панели">◫</button>
+    <button id="settings-btn" class="settings-toggle-btn" title="Настройки">⚙</button>
+  </div>
+
+  <!-- Скрытая панель настроек -->
+  <div id="settings-panel" class="settings-panel">
+    <div class="setting-row">
+      <span id="lbl-lang">Язык / Language:</span>
+      <select id="setting-lang" class="setting-select">
+        <option value="ru">Русский</option>
+        <option value="en">English</option>
+      </select>
+    </div>
+    <div class="setting-row">
+      <span id="lbl-font">Размер шрифта:</span>
+      <select id="setting-font" class="setting-select">
+        <option value="small">Крошечный</option>
+        <option value="medium">Мелкий</option>
+        <option value="large">Средний</option>
+        <option value="xlarge">Крупный</option>
+        <option value="xxlarge">Огромный</option>
+      </select>
+    </div>
+    <div class="setting-row">
+      <span id="lbl-timer">Автоусыпление:</span>
+      <select id="setting-timer" class="setting-select">
+        <option value="30">30 минут</option>
+        <option value="60">1 час</option>
+        <option value="120">2 часа</option>
+        <option value="0">Отключено</option>
+      </select>
+    </div>
+ 
+    <!-- Блок управления белым списком (всегда развернут) -->
+    <div class="setting-row" style="flex-direction: column; align-items: stretch; gap: 6px; flex: 1 1 auto; min-height: 0;">
+      <div id="lbl-wl-header" style="font-weight: bold; color: #333;">Защищенные (0)</div>
+      <div id="whitelist-box" class="whitelist-box"></div>
+    </div>
+  </div>
+
+  <!-- Основной экран со списками вкладок -->
+  <div id="main-view" class="main-view">
+    <div class="section-header" id="header-audio">
+      <div class="section-title"><span class="arrow" id="arrow-audio">▼</span> <span id="title-audio">🔊 Шумящие</span> <span id="count-audio"></span></div>
+    </div>
+    <div id="audio-tabs-list" class="tab-list"></div>
+
+    <div class="section-header" id="header-heavy">
+      <div class="section-title"><span class="arrow" id="arrow-heavy">▼</span> <span id="title-heavy">⏱️ Активные</span> <span id="count-heavy"></span></div>
+      <div class="header-buttons">
+        <button class="btn-small-mass btn-new" id="new-tab-btn">Новая ＋</button>
+        <button class="btn-small-mass" id="clean-btn">Усыпить все</button>
+      </div>
+    </div>
+    <div id="heavy-tabs-list" class="tab-list"></div>
+
+    <div class="section-header" id="header-sleep">
+      <div class="section-title"><span class="arrow" id="arrow-sleep">►</span> <span id="title-sleep">💤 Спящие</span> <span id="count-sleep"></span></div>
+    </div>
+    <div id="sleep-tabs-list" class="tab-list collapsed"></div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
